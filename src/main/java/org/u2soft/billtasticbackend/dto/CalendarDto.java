@@ -1,21 +1,21 @@
 package org.u2soft.billtasticbackend.dto;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
+@Data
 public class CalendarDto {
+
+    private Long id;
+
+    @NotNull(message = "Title cannot be null")
+    @Size(min = 1, max = 100, message = "Title must be between 1 and 100 characters")
     private String title;
 
     private String notes;
     private LocalDateTime eventDate;
-
-    // Getter ve Setter'lar
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-    public LocalDateTime getEventDate() { return eventDate; }
-    public void setEventDate(LocalDateTime eventDate) { this.eventDate = eventDate; }
-
+    private Long parentCalendarId;
 }

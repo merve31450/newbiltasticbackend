@@ -1,12 +1,17 @@
 package org.u2soft.billtasticbackend.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class CardRequestDto {
     private String cardNumber;
     private String cardHolderName;
-    private String expirationDate;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private java.time.LocalDate expiryDate;
+
     private String cvc;
 
-    // Getter ve Setter metotları
+    // Getter ve Setter
     public String getCardNumber() {
         return cardNumber;
     }
@@ -23,12 +28,12 @@ public class CardRequestDto {
         this.cardHolderName = cardHolderName;
     }
 
-    public String getExpirationDate() {
-        return expirationDate;
+    public java.time.LocalDate getExpiryDate() {
+        return expiryDate;
     }
 
-    public void setExpirationDate(String expirationDate) {
-        this.expirationDate = expirationDate;
+    public void setExpiryDate(java.time.LocalDate expiryDate) {
+        this.expiryDate = expiryDate;
     }
 
     public String getCvc() {

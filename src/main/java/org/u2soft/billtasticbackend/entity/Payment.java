@@ -20,7 +20,11 @@ public class Payment {
     private String status;
     @Column(name="payment_date")
     private LocalDateTime paymentDate;
-
+    private String transactionId;
+    private String cardNumber;
+    private String cardHolderName;
+    private String expiryDate;
+    private String cvc;
     public Long getId(){
         return  id;
 
@@ -60,6 +64,26 @@ public class Payment {
     public void setPaymentDate(LocalDateTime paymentDate) {
         this.paymentDate = paymentDate;
     }
+
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+
+    public String getCardNumber() { return cardNumber; }
+    public void setCardNumber(String cardNumber) { this.cardNumber = cardNumber; }
+
+    public String getCardHolderName() { return cardHolderName; }
+    public void setCardHolderName(String cardHolderName) { this.cardHolderName = cardHolderName; }
+
+    public String getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(String expiryDate) { this.expiryDate = expiryDate; }
+
+    public String getCvc() { return cvc; }
+    public void setCvc(String cvc) { this.cvc = cvc; }
+
+
+
 }
+
+
 
 

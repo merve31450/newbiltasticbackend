@@ -30,6 +30,7 @@ public class Mail {
     private String status; // Durum (ör. Gönderildi, Başarısız)
 
     // Getter ve Setter metotları
+
     public Long getId() {
         return id;
     }
@@ -85,6 +86,4 @@ public class Mail {
     public void setStatus(String status) {
         this.status = status;
     }
-
-    public String to;
 }

@@ -1,8 +1,12 @@
 package org.u2soft.billtasticbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
+@Data
 @Table(name = "users")
 public class User {
     @Id
@@ -10,34 +14,19 @@ public class User {
     private Long id;
 
     @Column(nullable = false)
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;   // ADMIN, USER…
+
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    // Getter ve Setter metodları
-    public Long getId() {
-        return id;
-    }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
 }
 

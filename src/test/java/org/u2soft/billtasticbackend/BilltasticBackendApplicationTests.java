@@ -9,5 +9,5 @@ class BilltasticBackendApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }
+

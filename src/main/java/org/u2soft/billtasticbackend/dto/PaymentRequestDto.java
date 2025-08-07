@@ -4,9 +4,9 @@ public class PaymentRequestDto {
     private String amount;
     private String currency;
     private String transactionId;
-    private CardRequestDto card;  // Kart bilgilerini almak için CardRequestDto kullanıyoruz
+    private CardRequestDto card;
 
-    // Getter ve Setter metotları
+    // Getter ve Setter
     public String getAmount() {
         return amount;
     }

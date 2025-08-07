@@ -1,43 +1,40 @@
 package org.u2soft.billtasticbackend.service;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.u2soft.billtasticbackend.entity.Calendar;
 import org.u2soft.billtasticbackend.repository.CalendarRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@Transactional
+@RequiredArgsConstructor    // repo'yu ctor-enject eder
 public class CalendarService {
 
-    private final CalendarRepository calendarRepository;
+    private final CalendarRepository repo;
 
-    @Autowired
-    public CalendarService(CalendarRepository calendarRepository) {
-        this.calendarRepository = calendarRepository;
-    }
 
     public List<Calendar> getAllCalendars() {
-        return calendarRepository.findAll();
+        return repo.findAll();
     }
 
-    public Calendar createCalendar(Calendar calendar) {
-        return calendarRepository.save(calendar);
+    public Optional<Calendar> findById(Long id) {
+        return repo.findById(id);
     }
 
-    public Calendar updateCalendar(Long id, Calendar calendar) {
-        return calendarRepository.findById(id)
-                .map(existingCalendar -> {
-                    calendar.setId(id);
-                    return calendarRepository.save(calendar);
-                })
-                .orElseThrow(() -> new IllegalArgumentException("Calendar not found with ID: " + id));
+
+    public Calendar save(Calendar calendar) {
+        return repo.save(calendar);
     }
 
-    public void deleteCalendar(Long id) {
-        if (!calendarRepository.existsById(id)) {
-            throw new IllegalArgumentException("Calendar not found with ID: " + id);
-        }
-        calendarRepository.deleteById(id);
+    public boolean exists(Long id) {
+        return repo.existsById(id);
+    }
+
+    public void delete(Long id) {
+        repo.deleteById(id);
     }
 }

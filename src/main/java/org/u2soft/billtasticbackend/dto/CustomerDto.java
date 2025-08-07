@@ -1,96 +1,81 @@
 package org.u2soft.billtasticbackend.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
+
 public class CustomerDto {
 
     private Long id;
     private String companyName;
     private String contactName;
     private String invoiceEmail;
-    private String invoiceNumber; // Fatura numarası
+    private String invoiceNumber;
     private Double euroAmount;
     private Double dollarAmount;
     private Double tlAmount;
     private String priority;
     private Double receivableTotal;
 
-    // Getter ve Setter metodları
-    public Long getId() {
-        return id;
-    }
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate creationDate;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate dueDate;
 
-    public String getCompanyName() {
-        return companyName;
-    }
 
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
 
-    public String getContactName() {
-        return contactName;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setContactName(String contactName) {
-        this.contactName = contactName;
-    }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
 
-    public String getInvoiceEmail() {
-        return invoiceEmail;
-    }
+    public String getContactName() { return contactName; }
+    public void setContactName(String contactName) { this.contactName = contactName; }
 
-    public void setInvoiceEmail(String invoiceEmail) {
-        this.invoiceEmail = invoiceEmail;
-    }
+    public String getInvoiceEmail() { return invoiceEmail; }
+    public void setInvoiceEmail(String invoiceEmail) { this.invoiceEmail = invoiceEmail; }
 
-    public String getInvoiceNumber() {
-        return invoiceNumber;
-    }
+    public String getInvoiceNumber() { return invoiceNumber; }
+    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
 
-    public void setInvoiceNumber(String invoiceNumber) {
-        this.invoiceNumber = invoiceNumber;
-    }
+    public Double getEuroAmount() { return euroAmount; }
+    public void setEuroAmount(Double euroAmount) { this.euroAmount = euroAmount; }
 
-    public Double getEuroAmount() {
-        return euroAmount;
-    }
+    public Double getDollarAmount() { return dollarAmount; }
+    public void setDollarAmount(Double dollarAmount) { this.dollarAmount = dollarAmount; }
 
-    public void setEuroAmount(Double euroAmount) {
-        this.euroAmount = euroAmount;
-    }
+    public Double getTlAmount() { return tlAmount; }
+    public void setTlAmount(Double tlAmount) { this.tlAmount = tlAmount; }
 
-    public Double getDollarAmount() {
-        return dollarAmount;
-    }
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
 
-    public void setDollarAmount(Double dollarAmount) {
-        this.dollarAmount = dollarAmount;
-    }
+    public Double getReceivableTotal() { return receivableTotal; }
+    public void setReceivableTotal(Double receivableTotal) { this.receivableTotal = receivableTotal; }
 
-    public Double getTlAmount() {
-        return tlAmount;
-    }
+    public LocalDate getCreationDate() { return creationDate; }
+    public void setCreationDate(LocalDate creationDate) { this.creationDate = creationDate; }
 
-    public void setTlAmount(Double tlAmount) {
-        this.tlAmount = tlAmount;
-    }
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 
-    public String getPriority() {
-        return priority;
-    }
 
-    public void setPriority(String priority) {
-        this.priority = priority;
-    }
-
-    public Double getReceivableTotal() {
-        return receivableTotal;
-    }
-
-    public void setReceivableTotal(Double receivableTotal) {
-        this.receivableTotal = receivableTotal;
+    @Override
+    public String toString() {
+        return "CustomerDto{" +
+                "id=" + id +
+                ", companyName='" + companyName + '\'' +
+                ", contactName='" + contactName + '\'' +
+                ", invoiceEmail='" + invoiceEmail + '\'' +
+                ", invoiceNumber='" + invoiceNumber + '\'' +
+                ", euroAmount=" + euroAmount +
+                ", dollarAmount=" + dollarAmount +
+                ", tlAmount=" + tlAmount +
+                ", priority='" + priority + '\'' +
+                ", receivableTotal=" + receivableTotal +
+                ", creationDate=" + creationDate +
+                ", dueDate=" + dueDate +
+                '}';
     }
 }

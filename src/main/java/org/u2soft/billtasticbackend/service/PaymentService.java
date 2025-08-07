@@ -29,10 +29,10 @@ public class PaymentService {
     public Payment updatePayment(Long id, Payment payment) {
         Optional<Payment> existingPayment = paymentRepository.findById(id);
         if (existingPayment.isPresent()) {
-            payment.setId(id);  // Veritabanındaki mevcut ID'yi ayarlıyoruz
+            payment.setId(id);
             return paymentRepository.save(payment);
         }
-        return null;  // Ödeme bulunamazsa null döndür
+        return null;
     }
 
     public boolean deletePayment(Long id) {
@@ -40,6 +40,6 @@ public class PaymentService {
             paymentRepository.deleteById(id);
             return true;
         }
-        return false;  // Ödeme bulunamazsa false döndür
+        return false;
     }
 }

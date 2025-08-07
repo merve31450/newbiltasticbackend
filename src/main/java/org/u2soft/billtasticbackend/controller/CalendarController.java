@@ -1,66 +1,67 @@
 package org.u2soft.billtasticbackend.controller;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.u2soft.billtasticbackend.dto.CalendarDto;
-import org.u2soft.billtasticbackend.entity.Calendar;
 import org.u2soft.billtasticbackend.mapper.CalendarMapper;
 import org.u2soft.billtasticbackend.service.CalendarService;
-
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/calendars")
+@CrossOrigin(origins = "http://localhost:3000")
+@RequiredArgsConstructor
 public class CalendarController {
 
-    private final CalendarService calendarService;
+    private final CalendarService service;
 
-    @Autowired
-    public CalendarController(CalendarService calendarService) {
-        this.calendarService = calendarService;
-    }
-
-    // Tüm takvimleri getiren metod
+    /* ---------- LISTE ---------- */
     @GetMapping
-    public List<Calendar> getAllCalendars() {
-        return calendarService.getAllCalendars();
+    public List<CalendarDto> findAll() {
+        return service.getAllCalendars()
+                .stream()
+                .map(CalendarMapper::toDto)
+                .toList();
     }
 
+    /* ---------- TEK KAYIT ---------- */
+    @GetMapping("/{id}")
+    public ResponseEntity<CalendarDto> findOne(@PathVariable Long id) {
+        return service.findById(id)
+                .map(CalendarMapper::toDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
-
-    // Yeni takvim ekleme metodu
+    /* ---------- EKLE ---------- */
     @PostMapping
-    public ResponseEntity<CalendarDto> createCalendar(@RequestBody CalendarDto calendarDto) {
-        Calendar calendar = CalendarMapper.toEntity(calendarDto);
-        Calendar savedCalendar = calendarService.createCalendar(calendar);
-        return new ResponseEntity<>(CalendarMapper.toDto(savedCalendar), HttpStatus.CREATED);
+    @ResponseStatus(HttpStatus.CREATED)
+    public CalendarDto add(@RequestBody @Valid CalendarDto dto) {
+        return CalendarMapper.toDto(service.save(CalendarMapper.toEntity(dto)));
     }
 
-    // Takvim güncelleme metodu
-    @PutMapping("{id}")
-    public ResponseEntity<CalendarDto> updateCalendar(@PathVariable Long id, @RequestBody CalendarDto calendarDto) {
-        // DTO'yu Entity'ye dönüştür
-        Calendar calendar = CalendarMapper.toEntity(calendarDto);
-
-        // Takvimi güncelle
-        Calendar updatedCalendar = calendarService.updateCalendar(id, calendar);
-
-        // Güncellenmiş takvimi DTO'ya dönüştürüp geri döndür
-        if (updatedCalendar != null) {
-            return new ResponseEntity<>(CalendarMapper.toDto(updatedCalendar), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Eğer takvim bulunamazsa 404 döner
+    /* ---------- GÜNCELLE ---------- */
+    @PutMapping("/{id}")
+    public ResponseEntity<CalendarDto> update(@PathVariable Long id,
+                                              @RequestBody CalendarDto dto) {
+        dto.setId(id);
+        return service.exists(id)
+                ? ResponseEntity.ok(
+                CalendarMapper.toDto(service.save(CalendarMapper.toEntity(dto))))
+                : ResponseEntity.notFound().build();
     }
 
-    // Takvim silme metodu
+    /* ---------- SİL ---------- */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCalendar(@PathVariable Long id) {
-        try {
-            calendarService.deleteCalendar(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Başarılı olursa 204 döner
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Eğer takvim bulunamazsa 404 döner
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!service.exists(id)) {
+            return ResponseEntity.notFound().build();
         }
-    } }
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}

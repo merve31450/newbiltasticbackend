@@ -4,6 +4,7 @@ import org.u2soft.billtasticbackend.entity.User;
 import org.u2soft.billtasticbackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,10 +13,12 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> getAllUsers() {
@@ -32,7 +35,7 @@ public class UserService {
             user.setId(id);
             return userRepository.save(user);
         }
-        return null;  // or throw an exception
+        return null;
     }
 
     public void deleteUser(Long id) {
