@@ -4,9 +4,15 @@ import jakarta.persistence.*;
 import java.util.Date;
 
 
+
+
 @Entity
 @Table(name = "customers")
 public class Customer {
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,7 +51,15 @@ public class Customer {
     @Column(name = "invoice_email", nullable = false, unique = true)
     private String invoiceEmail;
 
-    // Getter / Setter
+    // 🔥 User getter/setter (eksikti)
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    // Mevcut Getter / Setter'lar
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

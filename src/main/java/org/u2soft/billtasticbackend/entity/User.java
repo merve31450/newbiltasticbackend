@@ -20,6 +20,9 @@ public class User {
     @Column(nullable = false)
     private Role role;   // ADMIN, USER…
 
+    @Column(columnDefinition = "TEXT")
+    private String profileImage;
+
 
     @Column(nullable = false)
     private String name;
@@ -27,6 +30,8 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private String surname;
 
 }
 

@@ -1,67 +1,92 @@
 package org.u2soft.billtasticbackend.controller;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.u2soft.billtasticbackend.dto.CalendarDto;
-import org.u2soft.billtasticbackend.mapper.CalendarMapper;
 import org.u2soft.billtasticbackend.service.CalendarService;
+
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/calendars")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.56.1:3000"
+})
 @RequiredArgsConstructor
 public class CalendarController {
 
-    private final CalendarService service;
+    private final CalendarService calendarService; // ✅ Tek tanım yeterli
 
-    /* ---------- LISTE ---------- */
+    /* =====================================================
+       1️⃣ KULLANICIYA GÖRE TAKVİM LİSTELEME
+       ===================================================== */
     @GetMapping
-    public List<CalendarDto> findAll() {
-        return service.getAllCalendars()
-                .stream()
-                .map(CalendarMapper::toDto)
-                .toList();
+    public ResponseEntity<List<CalendarDto>> getAllForCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName(); // ✅ "auth" ismini koruduk
+
+        List<CalendarDto> calendars = calendarService.getAllCalendarsByUser(username);
+        return ResponseEntity.ok(calendars);
     }
 
-    /* ---------- TEK KAYIT ---------- */
+    /* =====================================================
+       2️⃣ TEK KAYIT (sadece sahibine)
+       ===================================================== */
     @GetMapping("/{id}")
-    public ResponseEntity<CalendarDto> findOne(@PathVariable Long id) {
-        return service.findById(id)
-                .map(CalendarMapper::toDto)
+    public ResponseEntity<CalendarDto> getOne(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        return calendarService.findByIdAndUser(id, username)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /* ---------- EKLE ---------- */
+    /* =====================================================
+       3️⃣ EKLE (kullanıcıya göre)
+       ===================================================== */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CalendarDto add(@RequestBody @Valid CalendarDto dto) {
-        return CalendarMapper.toDto(service.save(CalendarMapper.toEntity(dto)));
+    public CalendarDto create(@RequestBody @Valid CalendarDto dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        return calendarService.createCalendarForUser(dto, username);
     }
 
-    /* ---------- GÜNCELLE ---------- */
+    /* =====================================================
+       4️⃣ GÜNCELLE (sadece kendi etkinliği)
+       ===================================================== */
     @PutMapping("/{id}")
     public ResponseEntity<CalendarDto> update(@PathVariable Long id,
-                                              @RequestBody CalendarDto dto) {
+                                              @RequestBody @Valid CalendarDto dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
         dto.setId(id);
-        return service.exists(id)
-                ? ResponseEntity.ok(
-                CalendarMapper.toDto(service.save(CalendarMapper.toEntity(dto))))
-                : ResponseEntity.notFound().build();
+        return calendarService.updateCalendarForUser(dto, username)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    /* ---------- SİL ---------- */
+    /* =====================================================
+       5️⃣ SİL (sadece kendi etkinliği)
+       ===================================================== */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!service.exists(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        service.delete(id);
-        return ResponseEntity.noContent().build();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        boolean deleted = calendarService.deleteCalendarForUser(id, username);
+        return deleted
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }

@@ -18,6 +18,17 @@ public class Calendar {
     @JoinColumn(name = "parent_calendar_id")
     private Calendar parentCalendar;             // isteğe bağlı
 
+    @ManyToOne(optional = false,fetch = FetchType.LAZY)
+    @JoinColumn(name="user_id",nullable = false)
+    private User user;
+
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user){
+        this.user=user;
+    }
+
     /* getters / setters */
     public Long getId()                 { return id; }
     public void setId(Long id)          { this.id = id; }

@@ -7,10 +7,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-
-
-
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
+    // Hatırlatma zamanı geçmiş görevler (mevcut)
     List<Task> findByRemindAtBeforeAndBadge(LocalDateTime time, Task.Badge badge);
+
+
+    long countByCompleted(boolean completed);
+
+
+    List<Task> findTop5ByRemindAtAfterOrderByRemindAtAsc(LocalDateTime now);
+
+    long countByCompletedTrue();
+
+
 }

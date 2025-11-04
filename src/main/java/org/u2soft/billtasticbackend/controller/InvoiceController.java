@@ -1,33 +1,43 @@
+// src/main/java/org/u2soft/billtasticbackend/controller/InvoiceController.java
 package org.u2soft.billtasticbackend.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.u2soft.billtasticbackend.dto.InvoicePdfGenerator;
 import org.u2soft.billtasticbackend.dto.InvoiceRequest;
-import org.u2soft.billtasticbackend.repository.InvoiceRepository;
-import org.u2soft.billtasticbackend.service.InvoiceService;
 import org.u2soft.billtasticbackend.entity.Invoice;
+import org.u2soft.billtasticbackend.service.InvoiceService;
 
 import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Tüm fatura uç-noktaları tek yerde.
+ *   • /api/invoices                 → CRUD
+ *   • /api/invoices/save            → InvoiceRequest’i DB’ye kaydet
+ *
+ *   • /api/invoices/save-and-pdf    → Kaydet + PDF (byte[])
+ */
 @RestController
 @RequestMapping("/api/invoices")
-
+@CrossOrigin(origins = {
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.56.1:3000"
+})
+@PreAuthorize("permitAll()")          // Gerektiğinde ROLE bazlı daralt
+@RequiredArgsConstructor
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
-    private final InvoiceRepository invoiceRepository;
 
-    @Autowired
-    public InvoiceController(InvoiceService invoiceService, InvoiceRepository invoiceRepository) {
-        this.invoiceService = invoiceService;
-        this.invoiceRepository = invoiceRepository;
-    }
+    /* =========================================================
+       1) KLASİK CRUD (Invoice entity)
+       ========================================================= */
 
     @GetMapping
     public List<Invoice> getAllInvoices() {
@@ -37,47 +47,25 @@ public class InvoiceController {
     @PostMapping
     public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoice) {
         try {
-            Invoice createdInvoice = invoiceService.createInvoice(invoice);
-            return new ResponseEntity<>(createdInvoice, HttpStatus.CREATED);  // HTTP 201 Created
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST); // Hatalı istek
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR); // Hata durumu
-        }
-    }
-    @PostMapping("/save-and-pdf")
-    public ResponseEntity<byte[]> saveAndCreatePdf(@RequestBody InvoiceRequest invoiceRequest) {
-        try {
-            // Veritabanına kaydet
-            invoiceService.saveInvoiceFromRequest(invoiceRequest);
-
-            // PDF oluştur
-            ByteArrayOutputStream pdfStream = InvoicePdfGenerator.createInvoicePdf(invoiceRequest);
-
-            // PDF döndür
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=fatura.pdf")
-                    .body(pdfStream.toByteArray());
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            Invoice created = invoiceService.createInvoice(invoice);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException ex) {     // fatura numarası duplicate vb.
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-
-
     @PutMapping("/{id}")
-    public ResponseEntity<Invoice> updateInvoice(@PathVariable Long id, @RequestBody Invoice invoice) {
+    public ResponseEntity<Invoice> updateInvoice(@PathVariable Long id,
+                                                 @RequestBody Invoice invoice) {
         try {
-            Invoice updatedInvoice = invoiceService.updateInvoice(id, invoice);
-            if (updatedInvoice != null) {
-                return new ResponseEntity<>(updatedInvoice, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            Invoice updated = invoiceService.updateInvoice(id, invoice);
+            return ResponseEntity.ok(updated);
+        } catch (SecurityException ex) {            // başka kullanıcının faturası
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -85,10 +73,40 @@ public class InvoiceController {
     public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
         try {
             invoiceService.deleteInvoice(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.noContent().build();
+        } catch (SecurityException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /* =========================================================
+       2) InvoiceRequest → DB’ye kaydet (/save)
+       ========================================================= */
+    @PostMapping("/save")
+    public ResponseEntity<Void> saveInvoice(@RequestBody InvoiceRequest req) {
+        invoiceService.saveInvoiceFromRequest(req);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /* =========================================================
+       3) Kaydet + PDF döndür (/save-and-pdf)
+       ========================================================= */
+    @PostMapping("/save-and-pdf")
+    public ResponseEntity<byte[]> saveAndCreatePdf(@RequestBody InvoiceRequest req) {
+        try {
+            invoiceService.saveInvoiceFromRequest(req);                 // DB kaydı
+            ByteArrayOutputStream pdf = InvoicePdfGenerator.createInvoicePdf(req);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=fatura.pdf")
+                    .body(pdf.toByteArray());
+
+        } catch (Exception ex) {   // PDF veya IO hatası
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

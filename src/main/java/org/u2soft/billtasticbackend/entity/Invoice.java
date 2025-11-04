@@ -1,6 +1,8 @@
 package org.u2soft.billtasticbackend.entity;
-import lombok.Data;
+
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,6 +14,11 @@ public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 🔐 Fatura hangi kullanıcıya ait
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, unique = true)
     private String invoiceNumber;
@@ -34,6 +41,4 @@ public class Invoice {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "invoice_id")
     private List<InvoiceItem> items;
-
-
 }

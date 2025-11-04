@@ -7,6 +7,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.u2soft.billtasticbackend.dto.MailRequestDto;
 import org.u2soft.billtasticbackend.service.MailService;
 
+@CrossOrigin(
+        origins = {
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://192.168.56.1:3000"
+        },
+        allowCredentials = "true"
+)
 @RestController
 @RequestMapping("/api/mail")
 public class MailController {
@@ -25,7 +33,6 @@ public class MailController {
                 "Tarih: " + mailRequestDto.getDate() + "\nSaat: " + mailRequestDto.getTime();
 
         mailService.sendEmailWithDelay(mailRequestDto.getEmail(), subject, body, mailRequestDto.getDate(), mailRequestDto.getTime());
-
         return ResponseEntity.ok("Mail başarıyla planlandı!");
     }
 
