@@ -22,7 +22,7 @@ public class CustomerService {
     private final UserRepository userRepository;
 
     /* =====================================================
-       1️⃣ ADMIN TÜM MÜŞTERİLERİ GÖRÜR
+
        ===================================================== */
     public List<Customer> getAllCustomers() {
         return customerRepository.findAll();
@@ -41,7 +41,7 @@ public class CustomerService {
     }
 
     /* =====================================================
-       2️⃣ SADECE GİRİŞ YAPAN KULLANICIYA GÖRE MÜŞTERİLER
+
        ===================================================== */
     public List<CustomerDto> getAllCustomersByUser(String email) {
         User user = Optional.ofNullable(userRepository.findByEmail(email))

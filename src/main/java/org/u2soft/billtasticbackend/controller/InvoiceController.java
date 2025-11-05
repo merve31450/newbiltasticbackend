@@ -14,7 +14,7 @@ import org.u2soft.billtasticbackend.service.InvoiceService;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-
+import jakarta.validation.Valid;
 /**
  * Tüm fatura uç-noktaları tek yerde.
  *   • /api/invoices                 → CRUD
@@ -45,7 +45,8 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<Invoice> createInvoice(@RequestBody Invoice invoice) {
+    public ResponseEntity<Invoice> createInvoice( @RequestBody Invoice invoice) {
+
         try {
             Invoice created = invoiceService.createInvoice(invoice);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -85,7 +86,7 @@ public class InvoiceController {
        2) InvoiceRequest → DB’ye kaydet (/save)
        ========================================================= */
     @PostMapping("/save")
-    public ResponseEntity<Void> saveInvoice(@RequestBody InvoiceRequest req) {
+    public ResponseEntity<Void> saveInvoice(@Valid @RequestBody InvoiceRequest req) {
         invoiceService.saveInvoiceFromRequest(req);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

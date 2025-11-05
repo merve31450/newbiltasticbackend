@@ -1,6 +1,8 @@
 package org.u2soft.billtasticbackend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,19 +22,19 @@ public class CustomerController {
     private final CustomerService customerService;
 
     /* =====================================================
-       1️⃣ GİRİŞ YAPAN KULLANICININ TÜM MÜŞTERİLERİ
+       1️ GİRİŞ YAPAN KULLANICININ TÜM MÜŞTERİLERİ
        ===================================================== */
     @GetMapping
     public ResponseEntity<List<CustomerDto>> getAllForCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName(); // Token'dan email alınıyor 🔥
+        String email = auth.getName(); // Token'dan email alınıyor
 
         List<CustomerDto> customers = customerService.getAllCustomersByUser(email);
         return ResponseEntity.ok(customers);
     }
 
     /* =====================================================
-       2️⃣ TEK MÜŞTERİ GETİR (ID + GİRİŞ YAPAN KULLANICI)
+       2️TEK MÜŞTERİ GETİR (ID + GİRİŞ YAPAN KULLANICI)
        ===================================================== */
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDto> getCustomerById(@PathVariable Long id) {
@@ -45,19 +47,21 @@ public class CustomerController {
     }
 
     /* =====================================================
-       3️⃣ MÜŞTERİ EKLE (OTOMATİK USER İLİŞKİSİ)
+       3️MÜŞTERİ EKLE (OTOMATİK USER İLİŞKİSİ)
        ===================================================== */
     @PostMapping
-    public ResponseEntity<CustomerDto> createCustomer(@RequestBody CustomerDto customerDto) {
+    public ResponseEntity<CustomerDto> createCustomer(
+            @Valid @RequestBody CustomerDto customerDto) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
 
         CustomerDto created = customerService.createCustomerForUser(customerDto, email);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /* =====================================================
-       4️⃣ MÜŞTERİ GÜNCELLE (YALNIZCA SAHİBİ GÜNCELLEYEBİLİR)
+       4️ MÜŞTERİ GÜNCELLE (YALNIZCA SAHİBİ GÜNCELLEYEBİLİR)
        ===================================================== */
     @PutMapping("/{id}")
     public ResponseEntity<CustomerDto> updateCustomer(@PathVariable Long id,
@@ -72,7 +76,7 @@ public class CustomerController {
     }
 
     /* =====================================================
-       5️⃣ MÜŞTERİ SİL (YALNIZCA SAHİBİ SİLEBİLİR)
+       5️ MÜŞTERİ SİL (YALNIZCA SAHİBİ SİLEBİLİR)
        ===================================================== */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
@@ -84,4 +88,3 @@ public class CustomerController {
                 : ResponseEntity.notFound().build();
     }
 }
-

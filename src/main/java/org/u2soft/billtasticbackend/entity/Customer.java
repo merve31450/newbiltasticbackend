@@ -48,10 +48,10 @@ public class Customer {
     @Column(name = "receivable_total")
     private Double receivableTotal;
 
-    @Column(name = "invoice_email", nullable = false, unique = true)
+    @Column(name = "invoice_email")
     private String invoiceEmail;
 
-    // 🔥 User getter/setter (eksikti)
+
     public User getUser() {
         return user;
     }
@@ -59,7 +59,7 @@ public class Customer {
         this.user = user;
     }
 
-    // Mevcut Getter / Setter'lar
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

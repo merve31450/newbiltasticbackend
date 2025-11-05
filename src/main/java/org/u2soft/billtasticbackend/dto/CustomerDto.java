@@ -1,6 +1,9 @@
 package org.u2soft.billtasticbackend.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+
 import java.time.LocalDate;
 
 public class CustomerDto {
@@ -9,7 +12,14 @@ public class CustomerDto {
     private String companyName;
     private String contactName;
     private String invoiceEmail;
+
+    @NotBlank(message = "Fatura numarası boş olamaz")
+    @Pattern(
+            regexp = "^[A-Za-z0-9]{3}[0-9]{15}$",
+            message = "Fatura numarası 3 haneli alfa-nümerik birim kodu ve 15 haneli rakamdan oluşmalıdır (toplam 18 karakter)."
+    )
     private String invoiceNumber;
+
     private Double euroAmount;
     private Double dollarAmount;
     private Double tlAmount;
@@ -22,8 +32,7 @@ public class CustomerDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dueDate;
 
-
-
+    // ---------- Getters / Setters ----------
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -59,7 +68,6 @@ public class CustomerDto {
 
     public LocalDate getDueDate() { return dueDate; }
     public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
-
 
     @Override
     public String toString() {

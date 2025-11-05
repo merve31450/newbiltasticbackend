@@ -1,5 +1,6 @@
 package org.u2soft.billtasticbackend.dto;
 
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.util.List;
@@ -25,4 +26,9 @@ public class InvoiceRequest {
         private String unitPrice;
         private String quantity;
     }
+    @Pattern(
+            regexp = "^[A-Za-z0-9]{3}[0-9]{15}$",
+            message = "Fatura numarası 3 haneli alfa-nümerik birim kodu ve 15 haneli rakamdan oluşmalıdır (toplam 18 karakter)."
+    )
+    private String invoiceId;
 }

@@ -1,5 +1,6 @@
 package org.u2soft.billtasticbackend.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,27 +23,45 @@ public class MailController {
     @Autowired
     private MailService mailService;
 
+    /* =====================================================
+       1️E-POSTA GÖNDER (GEÇERLİLİK KONTROLÜ DAHİL)
+       ===================================================== */
     @PostMapping("/send")
-    public ResponseEntity<String> sendMail(@RequestBody MailRequestDto mailRequestDto) {
+    public ResponseEntity<String> sendMail(@Valid @RequestBody MailRequestDto mailRequestDto) {
+
+        // 1. Şifre kontrolü
         if (!mailRequestDto.getPassword().equals(mailRequestDto.getRepeatPassword())) {
             return ResponseEntity.badRequest().body("Şifreler uyuşmuyor.");
         }
 
+        // 2. Mail içeriği
         String subject = "Planlı Mail Gönderimi";
         String body = "Bu bir planlı mail gönderimidir.\n" +
                 "Tarih: " + mailRequestDto.getDate() + "\nSaat: " + mailRequestDto.getTime();
 
-        mailService.sendEmailWithDelay(mailRequestDto.getEmail(), subject, body, mailRequestDto.getDate(), mailRequestDto.getTime());
+        // 3. Mail servisine gönder
+        mailService.sendEmailWithDelay(
+                mailRequestDto.getEmail(),
+                subject,
+                body,
+                mailRequestDto.getDate(),
+                mailRequestDto.getTime()
+        );
+
         return ResponseEntity.ok("Mail başarıyla planlandı!");
     }
 
+    /* =====================================================
+       2️ DOSYA EKLİ MAIL GÖNDER (PLANLI)
+       ===================================================== */
     @PostMapping("/send-attachment")
-    public ResponseEntity<String> sendMailWithAttachment(@RequestParam("to") String to,
-                                                         @RequestParam("subject") String subject,
-                                                         @RequestParam("body") String body,
-                                                         @RequestParam("file") MultipartFile file,
-                                                         @RequestParam("date") String date,
-                                                         @RequestParam("time") String time) {
+    public ResponseEntity<String> sendMailWithAttachment(
+            @RequestParam("to") String to,
+            @RequestParam("subject") String subject,
+            @RequestParam("body") String body,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("date") String date,
+            @RequestParam("time") String time) {
         try {
             mailService.sendEmailWithAttachmentDelay(to, subject, body, file, date, time);
             return ResponseEntity.ok("Dosya ekli mail zamanlı olarak planlandı!");
