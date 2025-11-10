@@ -1,6 +1,7 @@
 // src/main/java/org/u2soft/billtasticbackend/controller/InvoiceController.java
 package org.u2soft.billtasticbackend.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,14 +15,7 @@ import org.u2soft.billtasticbackend.service.InvoiceService;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
-import jakarta.validation.Valid;
-/**
- * Tüm fatura uç-noktaları tek yerde.
- *   • /api/invoices                 → CRUD
- *   • /api/invoices/save            → InvoiceRequest’i DB’ye kaydet
- *
- *   • /api/invoices/save-and-pdf    → Kaydet + PDF (byte[])
- */
+
 @RestController
 @RequestMapping("/api/invoices")
 @CrossOrigin(origins = {
@@ -29,30 +23,41 @@ import jakarta.validation.Valid;
         "http://127.0.0.1:3000",
         "http://192.168.56.1:3000"
 })
-@PreAuthorize("permitAll()")          // Gerektiğinde ROLE bazlı daralt
+@PreAuthorize("isAuthenticated()")
 @RequiredArgsConstructor
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
-
-    /* =========================================================
-       1) KLASİK CRUD (Invoice entity)
-       ========================================================= */
 
     @GetMapping
     public List<Invoice> getAllInvoices() {
         return invoiceService.getAllInvoices();
     }
 
+    // Frontend artık buraya POST atıyor
     @PostMapping
-    public ResponseEntity<Invoice> createInvoice( @RequestBody Invoice invoice) {
-
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<Invoice> createInvoice(@Valid @RequestBody InvoiceRequest req) {
         try {
-            Invoice created = invoiceService.createInvoice(invoice);
+            Invoice created = invoiceService.saveInvoiceFromRequest(req);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (IllegalArgumentException ex) {     // fatura numarası duplicate vb.
+        } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // İstersen eski alışkanlık için /save endpoint'i de açık kalsın
+    @PostMapping("/save")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<Invoice> saveInvoice(@Valid @RequestBody InvoiceRequest req) {
+        try {
+            Invoice created = invoiceService.saveInvoiceFromRequest(req);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (Exception ex) {
+            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -63,9 +68,10 @@ public class InvoiceController {
         try {
             Invoice updated = invoiceService.updateInvoice(id, invoice);
             return ResponseEntity.ok(updated);
-        } catch (SecurityException ex) {            // başka kullanıcının faturası
+        } catch (SecurityException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception ex) {
+            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -78,34 +84,22 @@ public class InvoiceController {
         } catch (SecurityException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception ex) {
+            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /* =========================================================
-       2) InvoiceRequest → DB’ye kaydet (/save)
-       ========================================================= */
-    @PostMapping("/save")
-    public ResponseEntity<Void> saveInvoice(@Valid @RequestBody InvoiceRequest req) {
-        invoiceService.saveInvoiceFromRequest(req);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
-    /* =========================================================
-       3) Kaydet + PDF döndür (/save-and-pdf)
-       ========================================================= */
     @PostMapping("/save-and-pdf")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<byte[]> saveAndCreatePdf(@RequestBody InvoiceRequest req) {
         try {
-            invoiceService.saveInvoiceFromRequest(req);                 // DB kaydı
+            invoiceService.saveInvoiceFromRequest(req);
             ByteArrayOutputStream pdf = InvoicePdfGenerator.createInvoicePdf(req);
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=fatura.pdf")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=fatura.pdf")
                     .body(pdf.toByteArray());
-
-        } catch (Exception ex) {   // PDF veya IO hatası
+        } catch (Exception ex) {
             ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

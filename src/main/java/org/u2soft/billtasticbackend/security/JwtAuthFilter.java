@@ -22,6 +22,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
 
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -55,6 +56,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+        System.out.println("🟢 JwtAuthFilter çalıştı: " + request.getRequestURI());
+        System.out.println("📨 Gelen token: " + jwt);
+        System.out.println("📧 Token'dan çıkan email: " + email);
+
 
         filterChain.doFilter(request, response);
     }

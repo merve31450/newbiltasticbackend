@@ -8,7 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -20,40 +21,47 @@ public class JwtUtil {
 
     private final long JWT_EXPIRATION_MS = 15 * 60 * 1000;  // 15 dakika
 
-    // Uygulama başlarken secret string'i byte[] key'e dönüştür
     @PostConstruct
     public void init() {
         key = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // 1. JWT oluşturur
+    /* =========================================================
+       ✅ TOKEN OLUŞTUR (roles → dizi halinde eklenir)
+       ========================================================= */
     public String generateToken(UserDetails userDetails) {
+        String email = userDetails.getUsername();
+
+        // Kullanıcının rollerini liste olarak topla
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toList());
+
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())  // email gibi
-                .claim("role", userDetails.getAuthorities().iterator().next().getAuthority()) // "ROLE_ADMIN"
+                .setSubject(email)
+                .claim("roles", roles) // 🔥 "role" değil "roles"
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 2. Token'dan kullanıcı adını (email) çıkartır
+    /* =========================================================
+       TOKEN ÇÖZÜMLEME & DOĞRULAMA
+       ========================================================= */
     public String extractUsername(String token) {
         return parseClaims(token).getBody().getSubject();
     }
 
-    // 3. Token geçerli mi (süresi geçmiş mi?)
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    // 4. Token süresi bitmiş mi?
     private boolean isTokenExpired(String token) {
         return parseClaims(token).getBody().getExpiration().before(new Date());
     }
 
-    // 5. JWT çözümleme (parçalama)
     private Jws<Claims> parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)

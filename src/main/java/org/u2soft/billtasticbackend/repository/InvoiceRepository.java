@@ -1,3 +1,4 @@
+// src/main/java/org/u2soft/billtasticbackend/repository/InvoiceRepository.java
 package org.u2soft.billtasticbackend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,11 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
-
-
-    // 🔹 Fatura numarasına göre arama
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
-
-    // 🔹 Kullanıcı ID’sine göre faturaları getir
     List<Invoice> findByUserId(Long userId);
 }
