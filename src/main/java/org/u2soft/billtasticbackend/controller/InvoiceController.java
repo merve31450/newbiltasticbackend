@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -50,10 +51,19 @@ public class InvoiceController {
         invoiceService.deleteInvoice(id);
         return ResponseEntity.noContent().build();
     }
-    @GetMapping("/{id}")
-    public ResponseEntity<Invoice> getById(@PathVariable Long id) {
-        Invoice invoice = invoiceService.getInvoiceById(id);
-        return ResponseEntity.ok(invoice);
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> generatePdf(@PathVariable Long id) {
+        try {
+            byte[] pdf = invoiceService.generateInvoicePdf(id);
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=fatura_" + id + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
     }
 
 }
