@@ -25,45 +25,66 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
 
-    /* =========================================================
-       1️⃣ Aktif kullanıcıyı getir (token'dan)
-       ========================================================= */
     private User getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email);
-        if (user == null) {
-            throw new RuntimeException("Kullanıcı bulunamadı: " + email);
-        }
-        return user;
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        var email = auth.getName();
+        return userRepository.findByEmail(email);
     }
 
-    /* =========================================================
-       2️⃣ Tüm faturaları getir (kullanıcıya göre)
-       ========================================================= */
     public List<Invoice> getAllInvoices() {
         return invoiceRepository.findByUserId(getCurrentUser().getId());
     }
 
-    /* =========================================================
-       3️⃣ Yeni fatura oluştur (USD/EUR destekli)
-       ========================================================= */
+    /* --------------------- CREATE --------------------- */
     @Transactional
     public Invoice saveInvoiceFromRequest(InvoiceRequest req) {
-        User currentUser = getCurrentUser();
 
+        User currentUser = getCurrentUser();
         Invoice invoice = new Invoice();
         invoice.setUser(currentUser);
 
-        // Fatura numarası
-        invoice.setInvoiceNumber(
-                Optional.ofNullable(req.getInvoiceNo()).orElse(generateUniqueInvoiceNumber())
-        );
+        mapBasicFields(req, invoice);
+        mapItems(req, invoice);
 
+        return invoiceRepository.save(invoice);
+    }
+
+    /* ---------------------- UPDATE --------------------- */
+    @Transactional
+    public Invoice updateInvoiceFromRequest(Long id, InvoiceRequest req) {
+
+        User currentUser = getCurrentUser();
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invoice not found"));
+
+        if (!invoice.getUser().getId().equals(currentUser.getId())) {
+            throw new SecurityException("Bu faturayı güncelleme yetkiniz yok!");
+        }
+
+        mapBasicFields(req, invoice);
+
+        invoice.getItems().clear();
+        mapItems(req, invoice);
+
+        return invoiceRepository.save(invoice);
+    }
+
+    /* ---------------------- DELETE --------------------- */
+    @Transactional
+    public void deleteInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invoice not found"));
+        invoiceRepository.delete(invoice);
+    }
+
+    /* ---------------------- HELPERS --------------------- */
+    private void mapBasicFields(InvoiceRequest req, Invoice invoice) {
+
+        invoice.setInvoiceNumber(req.getInvoiceNo());
         invoice.setIssueDate(parseDate(req.getDate()));
         invoice.setDueDate(LocalDate.now().plusDays(30));
 
-        // Şirket bilgileri
         invoice.setCompanyName(req.getCompanyName());
         invoice.setAddress(req.getAddress());
         invoice.setPhone(req.getPhone());
@@ -71,101 +92,42 @@ public class InvoiceService {
         invoice.setWebsite(req.getWebsite());
         invoice.setBankAccount(req.getBankAccount());
 
-        // 💸 Para birimleri
-        invoice.setAmount(req.getTotalAmount() != null ? req.getTotalAmount() : BigDecimal.ZERO);
-        invoice.setAmountUsd(req.getTotalAmountUsd() != null ? req.getTotalAmountUsd() : BigDecimal.ZERO);
-        invoice.setAmountEur(req.getTotalAmountEur() != null ? req.getTotalAmountEur() : BigDecimal.ZERO);
-
-        // 📦 Kalemleri dönüştür
-        if (req.getItems() != null) {
-            for (InvoiceRequest.InvoiceItem dtoItem : req.getItems()) {
-                InvoiceItem item = new InvoiceItem();
-                item.setDescription(dtoItem.getDescription());
-                item.setQuantity(dtoItem.getQuantity() != null ? dtoItem.getQuantity() : BigDecimal.ONE);
-                item.setUnitPrice(dtoItem.getUnitPrice() != null ? dtoItem.getUnitPrice() : BigDecimal.ZERO);
-                item.setUnitPriceUsd(dtoItem.getUnitPriceUsd() != null ? dtoItem.getUnitPriceUsd() : BigDecimal.ZERO);
-                item.setUnitPriceEur(dtoItem.getUnitPriceEur() != null ? dtoItem.getUnitPriceEur() : BigDecimal.ZERO);
-                item.setInvoice(invoice);
-                invoice.getItems().add(item);
-            }
-        }
-
-        return invoiceRepository.save(invoice);
+        invoice.setAmount(req.getTotalAmount());
+        invoice.setAmountUsd(req.getTotalAmountUsd());
+        invoice.setAmountEur(req.getTotalAmountEur());
     }
 
-    /* =========================================================
-       4️⃣ Fatura Güncelle (orphanRemoval fix’li)
-       ========================================================= */
-    @Transactional
-    public Invoice updateInvoice(Long id, Invoice updatedInvoice) {
-        User currentUser = getCurrentUser();
+    private void mapItems(InvoiceRequest req, Invoice invoice) {
+        if (req.getItems() == null) return;
 
-        Invoice existing = invoiceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Fatura bulunamadı: " + id));
-
-        if (!existing.getUser().getId().equals(currentUser.getId())) {
-            throw new SecurityException("Bu faturayı güncelleme yetkiniz yok!");
-        }
-
-        existing.setCompanyName(updatedInvoice.getCompanyName());
-        existing.setAddress(updatedInvoice.getAddress());
-        existing.setPhone(updatedInvoice.getPhone());
-        existing.setEmail(updatedInvoice.getEmail());
-        existing.setWebsite(updatedInvoice.getWebsite());
-        existing.setBankAccount(updatedInvoice.getBankAccount());
-        existing.setInvoiceNumber(updatedInvoice.getInvoiceNumber());
-        existing.setIssueDate(updatedInvoice.getIssueDate());
-        existing.setDueDate(updatedInvoice.getDueDate());
-        existing.setAmount(updatedInvoice.getAmount());
-        existing.setAmountUsd(updatedInvoice.getAmountUsd());
-        existing.setAmountEur(updatedInvoice.getAmountEur());
-
-        // ✅ orphanRemoval fix: eski kalemleri temizle, yenilerini ekle
-        existing.getItems().clear();
-        if (updatedInvoice.getItems() != null) {
-            for (InvoiceItem item : updatedInvoice.getItems()) {
-                item.setId(null);
-                item.setInvoice(existing);
-                existing.getItems().add(item);
-            }
-        }
-
-        return invoiceRepository.save(existing);
+        req.getItems().forEach(dto -> {
+            InvoiceItem item = new InvoiceItem();
+            item.setInvoice(invoice);
+            item.setDescription(dto.getDescription());
+            item.setQuantity(dto.getQuantity());
+            item.setUnitPrice(dto.getUnitPrice());
+            item.setUnitPriceUsd(dto.getUnitPriceUsd());
+            item.setUnitPriceEur(dto.getUnitPriceEur());
+            invoice.getItems().add(item);
+        });
     }
 
-    /* =========================================================
-       5️⃣ Fatura Sil
-       ========================================================= */
-    @Transactional
-    public void deleteInvoice(Long id) {
+    private LocalDate parseDate(String dateStr) {
+        try { return LocalDate.parse(dateStr); }
+        catch (Exception e) { return LocalDate.now(); }
+    }
+    public Invoice getInvoiceById(Long id) {
+
         User currentUser = getCurrentUser();
 
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Fatura bulunamadı: " + id));
+                .orElseThrow(() -> new RuntimeException("Fatura bulunamadı"));
 
         if (!invoice.getUser().getId().equals(currentUser.getId())) {
-            throw new SecurityException("Bu faturayı silme yetkiniz yok!");
+            throw new SecurityException("Yetki yok!");
         }
 
-        invoiceRepository.delete(invoice);
+        return invoice;
     }
 
-    /* =========================================================
-       Yardımcı Fonksiyonlar
-       ========================================================= */
-    private LocalDate parseDate(String dateStr) {
-        try {
-            return LocalDate.parse(dateStr);
-        } catch (Exception e) {
-            return LocalDate.now();
-        }
-    }
-
-    private String generateUniqueInvoiceNumber() {
-        String invoiceNumber;
-        do {
-            invoiceNumber = "VL" + (int) (Math.random() * 1_000_000_000);
-        } while (invoiceRepository.findByInvoiceNumber(invoiceNumber).isPresent());
-        return invoiceNumber;
-    }
 }

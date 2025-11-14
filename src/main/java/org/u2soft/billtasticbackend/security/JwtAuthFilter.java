@@ -29,9 +29,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        // 1) CORS preflight isteği
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
+
         String path = request.getServletPath();
 
-
+        // 2) Login ve Mail serbest
         if (path.startsWith("/api/auth") || path.startsWith("/api/mail")) {
             filterChain.doFilter(request, response);
             return;
@@ -56,11 +62,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
-        System.out.println("🟢 JwtAuthFilter çalıştı: " + request.getRequestURI());
-        System.out.println("📨 Gelen token: " + jwt);
-        System.out.println("📧 Token'dan çıkan email: " + email);
-
 
         filterChain.doFilter(request, response);
     }
+
 }
